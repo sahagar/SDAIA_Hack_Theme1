@@ -2,6 +2,8 @@
 `Smartathon: The Smart Cities Challenge` : `Theme 1` 
 Denoise predictions from Object Detection models using **diffusion-based** sequential denoising.
 
+Project Link: [https://github.com/sahagar/SDAIA_Hack_Theme1](https://github.com/sahagar/SDAIA_Hack_Theme1)
+
 ## Project Overview
 Large-Scale real-world datasets often contain significantly more noise than academic benchmark datasets. Diffusion can be used as a denoising algorithm to further align and generalize model performance.
 - Use `Yolov6` as the base *object detection* framework and train it on processed Theme 1 dataset.

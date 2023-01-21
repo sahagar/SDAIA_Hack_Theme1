@@ -13,17 +13,19 @@ Large-Scale real-world datasets often contain significantly more noise than acad
     - `docker build -f DockerFile -t sdaiahack:latest .`
     - `docker run --rm --gpus all -v <path-to-dataset-directory>:/data -v <path-to-model-directory>:/output --name sdaiahack-container -it sdaiahack:latest`
     - Assumes `<path-to-dataset-directory>` contains unzipped `Theme1_dataset` and is mounted read/write
-        ###### ├── Theme1_dataset
-        ###### │   ├── images/
-        ###### │   │   ├── 0a1ea4614a9df912eeb8d1b40bffee74.jpg
-        ###### │   │   ├── 0a2bc0dc2371794509f4b776aff0dd88.jpg
-        ###### │   │   ├── ...
-        ###### │   │   └── 0a82e45ed11fb9ef1620a0b40cd9f6d8.jpg
-        ###### │   ├── sample_submission.csv
-        ###### │   ├── test.csv
-        ###### |   └── train.csv
+        ###### ├── \<path-to-dataset-directory\>/
+        ###### │   ├── Theme1_dataset/
+        ###### │   │   │   ├── images/
+        ###### │   │   │   ├── 0a1ea4614a9df912eeb8d1b40bffee74`.jpg
+        ###### │   │   │   ├── 0a2bc0dc2371794509f4b776aff0dd88.jpg
+        ###### │   │   │   ├── ...
+        ###### │   │   │   └── 0a82e45ed11fb9ef1620a0b40cd9f6d8.jpg
+        ###### │   │   ├── sample_submission.csv
+        ###### │   │   ├── test.csv
+        ###### │   │   └── train.csv
+    
     - Assumes `<path-to-model-directory>` is mounted read/write 
-- Download trained model from [checkpoint]()  to `<path-to-model-directory>/yolov6_train_output/exp/weights/best_ckpt.pt`
+- Download trained model from [checkpoint](https://drive.google.com/file/d/1nRQPKOa1wKPFc3EZKAMWuVZpoZjdNuYw/view?usp=sharing)  to `<path-to-model-directory>/yolov6_train_output/exp/weights/best_ckpt.pt`
     - `mkdir -p <path-to-model-directory>/yolov6_train_output/exp/weights`
 - Run `evaluate_yolov6.sh` from `/workspace` inside docker. `submission.csv` will be generated in `/output/yolov6_evaluation_output`
 - By default, it evaluates `test` images

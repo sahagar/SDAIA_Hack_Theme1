@@ -1,0 +1,6 @@
+train: /data/Theme1_dataset_yolo/images/train
+val: /data/Theme1_dataset_yolo/images/valid
+test: /data/Theme1_dataset_yolo/images/test
+
+nc: 11
+names: ['GRAFFITI', 'FADED_SIGNAGE', 'POTHOLES', 'GARBAGE', 'CONSTRUCTION_ROAD', 'BROKEN_SIGNAGE', 'BAD_STREETLIGHT', 'BAD_BILLBOARD', 'SAND_ON_ROAD', 'CLUTTER_SIDEWALK', 'UNKEPT_FACADE']

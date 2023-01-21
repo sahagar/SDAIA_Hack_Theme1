@@ -1,0 +1,28 @@
+_BASE_: "Base-DiffusionDet.yaml"
+MODEL:
+  WEIGHTS: "models/diffdet_coco_swinbase.pth"
+  BACKBONE:
+    NAME: build_swintransformer_fpn_backbone
+  SWIN:
+    SIZE: B-22k
+  FPN:
+    IN_FEATURES: ["swin0", "swin1", "swin2", "swin3" ]
+  DiffusionDet:
+    NUM_PROPOSALS: 100
+    NUM_CLASSES: 11
+    SAMPLE_STEP: 4
+  ROI_HEADS:
+    BATCH_SIZE_PER_IMAGE: 32
+    NUM_CLASSES: 11
+DATASETS:
+  TRAIN: ("Theme1_train",)
+  TEST: ("Theme1_valid",)
+SOLVER:
+  BASE_LR: 1e-05
+  BASE_LR_END: 5e-08
+  STEPS: (7000, 9500)
+  MAX_ITER: 10000
+INPUT:
+  CROP:
+    ENABLED: True
+  FORMAT: "RGB"

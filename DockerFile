@@ -1,0 +1,148 @@
+FROM nvcr.io/nvidia/cuda:11.3.0-cudnn8-devel-ubuntu18.04
+# use an older system (18.04) to avoid opencv incompatibility (issue#3524)
+
+##############################################################################
+# https://forums.developer.nvidia.com/t/notice-cuda-linux-repository-key-rotation/212772
+##############################################################################
+RUN rm /etc/apt/sources.list.d/cuda.list && \
+    apt-key del 7fa2af80 && \
+    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+
+##############################################################################
+# Temporary Installation Directory
+##############################################################################
+ENV STAGE_DIR=/tmp/stage_dir
+ENV WORKDIR=/workspace
+RUN mkdir -p ${STAGE_DIR}
+RUN mkdir -p ${WORKDIR}
+
+##############################################################################
+# Installation/Basic Utilities
+##############################################################################
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+        apt-get install -y --no-install-recommends \
+        software-properties-common build-essential autotools-dev \
+        pdsh g++ gcc \
+        curl wget vim tmux emacs less unzip \
+        htop iftop iotop ca-certificates \
+        rsync iputils-ping net-tools sudo \
+        libfuse-dev fuse \
+        git git-lfs \
+        # libnuma-dev is required by MLNX
+        libnuma-dev \
+        dos2unix psmisc graphviz llvm-10-dev ninja-build npm \
+        libaio-dev \
+        jq \
+        lshw \
+        dmidecode \
+        util-linux \
+        automake \
+        autoconf \
+        libtool \
+        perftest \
+        net-tools \
+        openssh-client \
+        openssh-server \
+        pciutils \
+        libaio-dev \
+        libcap2
+
+# Remove apt intermmediate files
+RUN rm -rf /var/lib/apt/lists/*
+
+##############################################################################
+# CMake
+##############################################################################
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.17.1/cmake-3.17.1-Linux-x86_64.sh \
+    -q -O ${STAGE_DIR}/cmake-install.sh && \
+    chmod u+x ${STAGE_DIR}/cmake-install.sh && \
+    mkdir /usr/local/cmake && \
+    ${STAGE_DIR}/cmake-install.sh --skip-license --prefix=/usr/local/cmake && \
+    rm ${STAGE_DIR}/cmake-install.sh
+
+##############################################################################
+# NCCL
+##############################################################################
+ENV NCCL_VERSION=2.8.4
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-keyring_1.0-1_all.deb && \
+    dpkg -i cuda-keyring_1.0-1_all.deb
+RUN apt-get update && sudo apt-get install -y --allow-downgrades --allow-change-held-packages --no-install-recommends \
+    libnccl2=${NCCL_VERSION}-1+cuda11.0 \
+    libnccl-dev=${NCCL_VERSION}-1+cuda11.0
+
+##############################################################################
+# Python
+##############################################################################
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHON_VERSION=3
+RUN apt-get install -y python3.7 python3.7-dev python3.7-distutils && \
+        rm -f /usr/bin/python /usr/bin/python3 && \
+        ln -s /usr/bin/python3.7 /usr/bin/python3 && \
+        ln -s /usr/bin/python3.7 /usr/bin/python && \
+        curl -O https://bootstrap.pypa.io/pip/get-pip.py && \
+        python get-pip.py && \
+        rm get-pip.py && \
+        ln -s /usr/local/bin/pip /usr/bin/pip && \
+        # Print python an pip version
+        python -V && pip -V
+
+##############################################################################
+# PyTorch
+##############################################################################
+RUN pip uninstall -y torch && \
+    pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+
+##############################################################################
+# Detectron2 Yolov6 DiffusionDet
+##############################################################################
+RUN rm -rf /usr/lib/python3/dist-packages/PyYAML* \
+    /usr/lib/python3.6/dist-packages/PyYAML* \
+    /usr/lib/python3.7/dist-packages/PyYAML*
+
+RUN pip install tensorboard \
+                onnx \
+                setuptools \
+                opencv-python \
+                timm
+
+RUN pip install 'git+https://github.com/facebookresearch/fvcore'
+
+# set FORCE_CUDA because during `docker build` cuda is not accessible
+ENV FORCE_CUDA="1"
+ENV FVCORE_CACHE=${STAGE_DIR}/.cache/fvcore
+ENV TORCH_CUDA_ARCH_LIST="7.0;8.0;8.6"
+
+RUN git clone https://github.com/facebookresearch/detectron2 ${STAGE_DIR}/detectron2_repo && \
+    cd ${STAGE_DIR}/detectron2_repo && \
+    git checkout 650c60ed365db1b04765ffd121574c0765a5c24c && \
+    pip install -v --disable-pip-version-check --target=/usr/local/lib/python3.7/dist-packages .
+
+# RUN git clone https://github.com/meituan/yolov6 ${WORKDIR}/yolov6_repo && \
+#     cd ${WORKDIR}/yolov6_repo && \
+#     git checkout 9c6be724860b45ce148a94aec98c8a7cbe2d75aa
+
+# RUN git clone https://github.com/ShoufaChen/DiffusionDet ${WORKDIR}/DiffusionDet_repo && \
+#     cd ${WORKDIR}/DiffusionDet_repo && \
+#     git checkout 1efb36d4b0b721f2d509bc72656235a94d73ab02
+
+COPY . ${WORKDIR}/
+
+RUN cd ${WORKDIR}/DiffusionDet && \
+    python -Bc "for p in __import__('pathlib').Path('.').rglob('*.py[co]'): p.unlink()" && \
+    python -Bc "for p in __import__('pathlib').Path('.').rglob('__pycache__'): p.rmdir()" && \
+    mkdir -p models && cd models && \
+    wget https://github.com/ShoufaChen/DiffusionDet/releases/download/v0.1/diffdet_coco_res50.pth -O diffdet_coco_res50.pth
+
+RUN cd ${WORKDIR}/yolov6 && \
+    python -Bc "for p in __import__('pathlib').Path('.').rglob('*.py[co]'): p.unlink()" && \
+    python -Bc "for p in __import__('pathlib').Path('.').rglob('__pycache__'): p.rmdir()" && \
+    pip install -r requirements.txt && \
+    mkdir -p weights && cd weights && \
+    wget https://github.com/meituan/YOLOv6/releases/download/0.3.0/yolov6l6.pt -O yolov6l6.pt
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get install ffmpeg libsm6 libxext6  -y
+RUN pip install pandas scikit-learn
+
+WORKDIR ${WORKDIR}

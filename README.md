@@ -29,6 +29,7 @@ Large-Scale real-world datasets often contain significantly more noise than acad
     - Assumes `<path-to-model-directory>` is mounted read/write 
 - Download trained model from [checkpoint](https://drive.google.com/file/d/1nRQPKOa1wKPFc3EZKAMWuVZpoZjdNuYw/view?usp=sharing)  to `<path-to-model-directory>/yolov6_train_output/exp/weights/best_ckpt.pt`
     - `mkdir -p <path-to-model-directory>/yolov6_train_output/exp/weights`
+    - md5 checksum: `8f379b2e998ffc80c51e625496135cb0`
 - Run `evaluate_yolov6.sh` from `/workspace` inside docker. `submission.csv` will be generated in `/output/yolov6_evaluation_output`
 - By default, it evaluates `test` images
 
